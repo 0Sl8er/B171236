@@ -9,11 +9,12 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 ## Introduction
-explanation of hypothesis
+
+Dehydration is caused by the lack of water in the body. This can happen when the body sweats a lot, along with an insufficient water intake. Urinary tract infections (UTIs) can result from dehydration and are treated using antibiotics such as nitrofurantoin. Using prescription data from pharmacies in Scotland, the link between warmer months and level of prescription of nitrofurantoin will be explored.
 
 ## Loading Libraries
 
-```{r}
+```{r, load-libraries, message=FALSE}
 library(tidyverse)
 library(janitor)
 library(here)
@@ -22,52 +23,67 @@ library(kableExtra)
 ```
 
 
-## Importing Data
+## Loading Data
 
-```{r}
-jan2023_raw <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/6caa7144-f0e4-4ab0-b9e4-8fa10c8edf1c/download/pitc202301.csv") %>% 
+```{r, load-data, message=FALSE, warning=FALSE}
+#importing data files downloaded from https://www.opendata.nhs.scot/dataset/prescriptions-in-the-community
+#cleaning names for consistency
+jan2023_raw <- read_csv(here("data", "pitc202301.csv")) %>% 
   clean_names()
 
-feb2023_raw <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/ad6d7f4e-08fd-40ed-ad49-bf450d386f39/download/pitc202302.csv") %>% 
+feb2023_raw <- read_csv(here("data", "pitc202302.csv")) %>% 
   clean_names()
 
-march2023_raw <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/8dd06c58-1a09-483a-8a01-5d68cfb8b38e/download/pitc202303.csv") %>% 
+march2023_raw <- read_csv(here("data", "pitc202303.csv")) %>% 
   clean_names()
 
-april2023_raw <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/720699b0-7584-4ddb-9915-79b298189d1d/download/pitc202304.csv") %>% 
+april2023_raw <- read_csv(here("data", "pitc202304.csv")) %>% 
   clean_names()
 
-may2023_raw <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/a0cf1a9f-d8c3-4bda-a8d9-733897c4c288/download/pitc202305.csv") %>% 
+may2023_raw <- read_csv(here("data", "pitc202305.csv")) %>% 
   clean_names()
 
-june2023_raw <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/66e9611a-fbea-45b2-9edd-351c388fd06d/download/pitc202306.csv") %>% 
+june2023_raw <- read_csv(here("data", "pitc202306.csv")) %>% 
   clean_names()
 
-july2023_raw <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/7bb45ee6-6f1c-45f4-933b-958bdbe0ca4f/download/pitc202307.csv") %>% 
+july2023_raw <- read_csv(here("data", "pitc202307.csv")) %>% 
   clean_names()
 
-august2023_raw <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/72ca4ad2-0228-4672-9eb0-cc911e4a8ca7/download/pitc202308.csv") %>% 
+august2023_raw <- read_csv(here("data", "pitc202308.csv")) %>% 
   clean_names()
 
-sept2023_raw <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/2d3d240f-1467-4a91-9f0e-769745650cb9/download/pitc202309.csv") %>% 
+sept2023_raw <- read_csv(here("data", "pitc202309.csv")) %>% 
   clean_names()
 
-oct2023_raw <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/94134438-db1d-4b8d-8f70-5e9b0e47bd03/download/pitc202310.csv") %>% 
+oct2023_raw <- read_csv(here("data", "pitc202310.csv")) %>% 
   clean_names()
 
-nov2023_raw <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/21d11fed-a494-4e30-9bb6-46143c3b9530/download/pitc202311.csv") %>% 
+nov2023_raw <- read_csv(here("data", "pitc202311.csv")) %>% 
   clean_names()
 
-dec2023_raw <- read_csv("https://www.opendata.nhs.scot/dataset/84393984-14e9-4b0d-a797-b288db64d088/resource/00cdf8d7-f784-4e87-894c-34f2540ea6ab/download/pitc202312.csv") %>% 
+dec2023_raw <- read_csv(here("data", "pitc202312.csv")) %>% 
   clean_names()
-
-jan2023_nitrofurantoin <- jan2023_raw %>% 
-  filter(str_detect(bnf_item_description, "NITROFURANTOIN"))
 
 ```
 
+## Joining Dataframes
+
+```{r}
+
+```
+
+## Filtering for Antibiotic (Nitrofurantoin) Data
+
+```{r}
+jan2023_nitrofurantoin <- jan2023_raw %>% 
+  filter(str_detect(bnf_item_description, "NITROFURANTOIN"))
+```
+
+
 ```{r include = FALSE}
 #reasoning for choosing 2023 and nitrofurantoin-
+
+#say where data is found - links specific to each dataset found at https://www.opendata.nhs.scot/dataset/prescriptions-in-the-community
 
 #show head of dataframe?
 
@@ -82,6 +98,8 @@ jan2023_nitrofurantoin <- jan2023_raw %>%
 #group by healthboard and month, sum of paid quantity
 
 #join with healthboards to know names
+
+#lubridate for month + year
 
 #plot x = month, y = e.g. paid quantity, coloured by healthboard
 ```
