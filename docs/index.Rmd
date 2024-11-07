@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 ## Introduction
 
-Dehydration is caused by the lack of water in the body. This can happen when the body sweats a lot, along with an insufficient water intake. Urinary tract infections (UTIs) can result from dehydration and are treated using antibiotics such as nitrofurantoin. Using prescription data from pharmacies in Scotland, the link between warmer months and level of prescription of nitrofurantoin will be explored.
+Dehydration is caused by the lack of water in the body. This can happen when the body produces a lot of sweat, along with an insufficient water intake. Urinary tract infections (UTIs) can result from dehydration and are treated using antibiotics such as nitrofurantoin. Using prescription data from pharmacies in Scotland, the link between warmer months and level of prescription of nitrofurantoin will be explored.
 
 ## Loading Libraries
 
