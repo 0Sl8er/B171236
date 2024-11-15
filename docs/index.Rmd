@@ -1,7 +1,7 @@
 ---
 title: "Does the prescription of UTI antibiotics increase during warmer months in Scotland?"
 author: "Orianne Slater"
-date: "2024-11-01"
+date: "`r format(Sys.time(), '%b-%Y')`"
 output: html_document
 ---
 
@@ -25,60 +25,58 @@ library(kableExtra)
 
 ## Loading Data
 
+Importing data files by month in 2022 downloaded from https://www.opendata.nhs.scot/dataset/prescriptions-in-the-community . The year 2022 was chosen as the summer involved record breaking high temperatures in the UK (to be referenced).
 ```{r, load-data, message=FALSE, warning=FALSE}
-#importing data files downloaded from https://www.opendata.nhs.scot/dataset/prescriptions-in-the-community
-#cleaning names for consistency
-jan2023_raw <- read_csv(here("data", "pitc202301.csv")) %>% 
+#creating a list of the files containing the information required
+files <- list.files(here("data"), pattern = "2022")
+
+#creating a dataframe which combines all of the information in the files
+all_data <- files %>% 
+  map_dfr(~read_csv(here("data", .))) %>% 
   clean_names()
 
-feb2023_raw <- read_csv(here("data", "pitc202302.csv")) %>% 
+#loading in data for healthboard names
+hb <- read_csv(here("data", "health_boards.csv")) %>% 
   clean_names()
 
-march2023_raw <- read_csv(here("data", "pitc202303.csv")) %>% 
-  clean_names()
-
-april2023_raw <- read_csv(here("data", "pitc202304.csv")) %>% 
-  clean_names()
-
-may2023_raw <- read_csv(here("data", "pitc202305.csv")) %>% 
-  clean_names()
-
-june2023_raw <- read_csv(here("data", "pitc202306.csv")) %>% 
-  clean_names()
-
-july2023_raw <- read_csv(here("data", "pitc202307.csv")) %>% 
-  clean_names()
-
-august2023_raw <- read_csv(here("data", "pitc202308.csv")) %>% 
-  clean_names()
-
-sept2023_raw <- read_csv(here("data", "pitc202309.csv")) %>% 
-  clean_names()
-
-oct2023_raw <- read_csv(here("data", "pitc202310.csv")) %>% 
-  clean_names()
-
-nov2023_raw <- read_csv(here("data", "pitc202311.csv")) %>% 
-  clean_names()
-
-dec2023_raw <- read_csv(here("data", "pitc202312.csv")) %>% 
-  clean_names()
+#joining precription data to healthboard names
+hb_and_prescription <- all_data %>% 
+  full_join(hb, by = c("hbt" = "hb"))
 
 ```
 
-## Joining Dataframes
 
-```{r}
+## Trend of Nitrofurantoin Prescription in Scotland
+
+The data must be wrangled in order to make it easier to plot later.
+```{r, scotland-data}
+#filtering for data on the prescribed antibiotic we're interested in for the whole of Scotland at once
+combined_scotland_data  <- hb_and_prescription %>% 
+  filter(str_detect(bnf_item_description, "NITROFURANTOIN")) %>% 
+  group_by(paid_date_month) %>% 
+  summarise(paid_quantity = sum(paid_quantity))
+# ^mutate paid_date_month to show months in words
+
+#plotting data
+combined_scotland_plot <- combined_scotland_data %>% 
+  ggplot(aes(x = paid_date_month, y = paid_quantity))+
+  geom_line()+
+  labs(x = "Month", 
+       y = "Quantity of Nitrofurantoin Prescribed", 
+       title = "Trend in Nitrofurantoin prescription over the course of 2022 in Scotland")
+combined_scotland_plot
+#observe trend, back up (?) with information on hottest months
+#plot shows highest prescription around August, end of the year appears to be steadily higher than first 6 months
 
 ```
 
-## Filtering for Antibiotic (Nitrofurantoin) Data
+Next:
 
-```{r}
-jan2023_nitrofurantoin <- jan2023_raw %>% 
-  filter(str_detect(bnf_item_description, "NITROFURANTOIN"))
-```
-
+* make plot pretty with month names, etc.
+* observe trends by healthboard, by population (is there any temperature difference between these areas that have an effect?)
+* consider possibilities other than temperature and find data on it to see if it correlates (may not be hot enough in Scotland for observable effects on dehydration)
+* change theme in YAML
+* a table
 
 ```{r include = FALSE}
 #reasoning for choosing 2023 and nitrofurantoin-
@@ -93,6 +91,8 @@ jan2023_nitrofurantoin <- jan2023_raw %>%
 
 #or newname<- merge(df1, df2)%>% merge(df3)
 
+#bind_rows
+
 #filter for nitrofurantoin
 
 #group by healthboard and month, sum of paid quantity
@@ -103,12 +103,4 @@ jan2023_nitrofurantoin <- jan2023_raw %>%
 
 #plot x = month, y = e.g. paid quantity, coloured by healthboard
 ```
-## Plots
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
