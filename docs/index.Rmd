@@ -1,5 +1,5 @@
 ---
-title: "Does the prescription of UTI antibiotics increase during warmer months in Scotland?"
+title: "Investigating the prescription change of Gaviscon over the winter holidays in Scotland?"
 author: "Orianne Slater"
 date: "`r format(Sys.time(), '%b-%Y')`"
 output: html_document
@@ -10,75 +10,114 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 ## Introduction
 
-Dehydration is caused by the lack of water in the body. This can happen when the body produces a lot of sweat, along with an insufficient water intake. Urinary tract infections (UTIs) can result from dehydration and are treated using antibiotics such as nitrofurantoin. Using prescription data from pharmacies in Scotland, the link between warmer months and level of prescription of nitrofurantoin will be explored.
+Heartburn is a pain in the chest felt when acid from the stomach travels up the oesophagus. This can happen as a result of different factors including smoking, being overweight, consumption of certain food, alcohol consumption, and stress. Gaviscon can be administered to aliviate heartburn. Using data on monthly prescribed medication, this study will investigate the change in Gaviscon prescription during the winter holidays. December, with the festivities, is a month well associated with the over consumption of food and alcohol whereas January has associations of wellness and new starts. This might suggest that Gaviscon use would be higher during December compared to January.
 
 ## Loading Libraries
 
 ```{r, load-libraries, message=FALSE}
 library(tidyverse)
-library(janitor)
-library(here)
-library(gt)
-library(kableExtra)
+library(janitor) #clean data
+library(here) #locate data
+library(gt) #tables
 ```
 
 
 ## Loading Data
 
-Importing data files by month in 2022 downloaded from https://www.opendata.nhs.scot/dataset/prescriptions-in-the-community . The year 2022 was chosen as the summer involved record breaking high temperatures in the UK (to be referenced).
-```{r, load-data, message=FALSE, warning=FALSE}
-#creating a list of the files containing the information required
-files <- list.files(here("data"), pattern = "2022")
+Importing data files of December and January 2019-2023 downloaded from https://www.opendata.nhs.scot/dataset/prescriptions-in-the-community . These years were chosen to compare winter holidays with and without COVID lockdown restrictions (to be referenced).
 
-#creating a dataframe which combines all of the information in the files
+```{r loading, message=FALSE, warning=FALSE}
+#creating a list of the files containing prescription data
+files <- list.files(here("data"), pattern = "20")
+
+#creating a dataframe which combines all of the information in the files and cleaning the column names for consistency
 all_data <- files %>% 
-  map_dfr(~read_csv(here("data", .))) %>% 
+  map_dfr(~read_csv(here("data", .))) %>%
   clean_names()
 
-#loading in data for healthboard names
+#loading in data for healthboard names and cleaning the column names for consistency
 hb <- read_csv(here("data", "health_boards.csv")) %>% 
   clean_names()
 
 #joining precription data to healthboard names
 hb_and_prescription <- all_data %>% 
-  full_join(hb, by = c("hbt" = "hb"))
-
+  full_join(hb, by = c("hbt2014" = "hb"))
 ```
 
+## Wrangling Data
 
-## Trend of Nitrofurantoin Prescription in Scotland
-
-The data must be wrangled in order to make it easier to plot later.
-```{r, scotland-data}
+```{r wrangling}
+#The data must be wrangled in order to make it easier to plot later.
 #filtering for data on the prescribed antibiotic we're interested in for the whole of Scotland at once
 combined_scotland_data  <- hb_and_prescription %>% 
-  filter(str_detect(bnf_item_description, "NITROFURANTOIN")) %>% 
-  group_by(paid_date_month) %>% 
-  summarise(paid_quantity = sum(paid_quantity))
-# ^mutate paid_date_month to show months in words
+  filter(str_detect(bnf_item_description, "GAVISCON")) %>% 
+  mutate(paid_date_month = parse_date_time(paid_date_month, "ym")) %>% 
+  mutate(year = format(paid_date_month, "%Y"))
 
+#creating a dataframe to add as column clarifying which holiday
+years <- 2019:2022
+range <- paste(years, years+1, sep = "/")
+repeats <- rep(range, each = 2)
+df <- tibble(holiday = repeats)
+
+for_plot <- combined_scotland_data %>% 
+  group_by(paid_date_month) %>% 
+  summarise(paid_quantity = sum(paid_quantity)) %>% 
+  mutate(holiday = df$holiday)
+```
+
+## Plotting Data
+
+```{r bar-plotting}
 #plotting data
-combined_scotland_plot <- combined_scotland_data %>% 
-  ggplot(aes(x = paid_date_month, y = paid_quantity))+
-  geom_line()+
-  labs(x = "Month", 
-       y = "Quantity of Nitrofurantoin Prescribed", 
-       title = "Trend in Nitrofurantoin prescription over the course of 2022 in Scotland")
+combined_scotland_plot <- for_plot %>% 
+  ggplot(aes(x = paid_date_month, y = paid_quantity, fill = paid_date_month))+
+  geom_bar(stat = "identity")+
+  labs(x = "December and January", 
+       y = "Quantity of Gaviscon Prescribed", 
+       title = "Trend in Gaviscon prescription over winter holidays in Scotland")
+  
+  #scale_fill_manual(values = rep(c("red", "green")))
 combined_scotland_plot
-#observe trend, back up (?) with information on hottest months
-#plot shows highest prescription around August, end of the year appears to be steadily higher than first 6 months
+```
+
+## Comparison of differences between December and January
+
+```{r table-plotting}
+#making table to compare differences observed
+change_in_prescription <- for_plot %>% 
+  mutate(month = month(paid_date_month)) %>% 
+  select(holiday, paid_quantity, month) %>% 
+  pivot_wider(names_from = month, values_from = paid_quantity) %>% 
+  rename(december = 2, january = 3) %>% 
+  mutate(difference = december - january)
+
+change_table <- change_in_prescription %>% 
+  gt()
+change_table  
+
+#needs title, maybe highlight highest difference
+```
+
+```{r healthboard}
 
 ```
 
-Next:
-
-* make plot pretty with month names, etc.
-* observe trends by healthboard, by population (is there any temperature difference between these areas that have an effect?)
-* consider possibilities other than temperature and find data on it to see if it correlates (may not be hot enough in Scotland for observable effects on dehydration)
-* change theme in YAML
-* a table
+to do:
+*change names
+*make graph pretty (y-axis numbers, months, fill)
+*change YAML theme
+*make a table of Jan-Dec to oberve differences in differences (COVID?)
+*use census for socioeconomics and whether that effects the proportion of change? (difference/initial)
 
 ```{r include = FALSE}
+#gavison over december and january - compare the two months of different years for increase then decrease
+#bar chart of each jan and dec
+#table to show difference between jan and dec of each year (COVID effect)
+#map or graph for the difference in each HB
+#look into the effect of covid
+#look into the effect of socioeconomics
+
 #reasoning for choosing 2023 and nitrofurantoin-
 
 #say where data is found - links specific to each dataset found at https://www.opendata.nhs.scot/dataset/prescriptions-in-the-community
@@ -102,5 +141,9 @@ Next:
 #lubridate for month + year
 
 #plot x = month, y = e.g. paid quantity, coloured by healthboard
+
+#new_date = as.character(paid_date_month)) %>% 
+ # mutate(formatted_date = as.Date(new_date, format = "%Y,%m,%d")) %>% 
+ # mutate(month = format(formatted_date, "%B")) %>% 
 ```
 
