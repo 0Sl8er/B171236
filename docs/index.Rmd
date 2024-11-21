@@ -1,8 +1,13 @@
 ---
-title: "Investigating the prescription change of Gaviscon over the winter holidays in Scotland?"
+title: "Investigating the prescription change of Gaviscon over the winter holidays in Scotland"
 author: "Orianne Slater"
 date: "`r format(Sys.time(), '%b-%Y')`"
-output: html_document
+output: 
+  html_document:
+    theme: journal
+    toc: yes
+    toc_float:
+      collapsed: true
 ---
 
 ```{r setup, include=FALSE}
@@ -10,7 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 ## Introduction
 
-Heartburn is a pain in the chest felt when acid from the stomach travels up the oesophagus. This can happen as a result of different factors including smoking, being overweight, consumption of certain food, alcohol consumption, and stress. Gaviscon can be administered to aliviate heartburn. Using data on monthly prescribed medication, this study will investigate the change in Gaviscon prescription during the winter holidays. December, with the festivities, is a month well associated with the over consumption of food and alcohol whereas January has associations of wellness and new starts. This might suggest that Gaviscon use would be higher during December compared to January.
+Heartburn is a pain in the chest felt when acid from the stomach travels up the oesophagus. This can happen as a result of different factors including smoking, being overweight, consumption of certain food, alcohol consumption, and stress. To aliviate heartburn, Gaviscon can be administered. Using data on monthly prescribed medication, this study will investigate the change in Gaviscon prescription during the winter holidays. December, with the festivities, is a month well associated with the over consumption of food and alcohol whereas January has associations of wellness and new starts. This might suggest that Gaviscon use would be higher during December compared to January.
 
 ## Loading Libraries
 
@@ -63,7 +68,8 @@ df <- tibble(holiday = repeats)
 for_plot <- combined_scotland_data %>% 
   group_by(paid_date_month) %>% 
   summarise(paid_quantity = sum(paid_quantity)) %>% 
-  mutate(holiday = df$holiday)
+  mutate(holiday = df$holiday) %>% 
+  mutate(month = month(paid_date_month, label = TRUE, abbr = FALSE))
 ```
 
 ## Plotting Data
@@ -71,13 +77,13 @@ for_plot <- combined_scotland_data %>%
 ```{r bar-plotting}
 #plotting data
 combined_scotland_plot <- for_plot %>% 
-  ggplot(aes(x = paid_date_month, y = paid_quantity, fill = paid_date_month))+
-  geom_bar(stat = "identity")+
-  labs(x = "December and January", 
+  ggplot(aes(x = holiday, y = paid_quantity, fill = month))+
+  geom_bar(stat = "identity", alpha = 0.9)+
+  theme_minimal()+
+  labs(x = "Date prescribed", 
        y = "Quantity of Gaviscon Prescribed", 
-       title = "Trend in Gaviscon prescription over winter holidays in Scotland")
-  
-  #scale_fill_manual(values = rep(c("red", "green")))
+       title = "Trend in Gaviscon prescription over winter holidays in Scotland",
+       fill = "Month")
 combined_scotland_plot
 ```
 
@@ -86,17 +92,23 @@ combined_scotland_plot
 ```{r table-plotting}
 #making table to compare differences observed
 change_in_prescription <- for_plot %>% 
-  mutate(month = month(paid_date_month)) %>% 
   select(holiday, paid_quantity, month) %>% 
   pivot_wider(names_from = month, values_from = paid_quantity) %>% 
-  rename(december = 2, january = 3) %>% 
-  mutate(difference = december - january)
+  mutate(difference = January - December) %>% 
+  mutate(percent = difference/December)
 
 change_table <- change_in_prescription %>% 
-  gt()
+  gt() %>% 
+  fmt_number(columns = c(December, January, difference), decimals = 0) %>% 
+  fmt_percent(columns = percent, decimals = 2) %>% 
+  tab_header(title = "Prescription Quantity of Gaviscon During Winter Holidays", 
+             subtitle = "Data from NHS Scotland") %>% 
+  cols_label(holiday = " ",
+             difference = "Change", 
+             percent = "Percentage Change") %>% 
+  cols_align(align = "center",
+              columns = percent)
 change_table  
-
-#needs title, maybe highlight highest difference
 ```
 
 ```{r healthboard}
@@ -104,11 +116,20 @@ change_table
 ```
 
 to do:
-*change names
-*make graph pretty (y-axis numbers, months, fill)
-*change YAML theme
-*make a table of Jan-Dec to oberve differences in differences (COVID?)
-*use census for socioeconomics and whether that effects the proportion of change? (difference/initial)
+
+* change names
+
+* make graph pretty (y-axis numbers, months, fill)
+
+* change YAML theme
+
+* make a table of Jan-Dec to oberve differences in differences (COVID?)
+
+* use census for socioeconomics and whether that effects the proportion of change? (difference/initial)
+
+* look into general trend for decrease in precriptions in Jan
+
+*check omeprazole or other antacids
 
 ```{r include = FALSE}
 #gavison over december and january - compare the two months of different years for increase then decrease
