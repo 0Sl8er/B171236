@@ -29,7 +29,7 @@ library(gt) #tables
 
 ## Loading Data
 
-Importing data files of December and January 2019-2023 downloaded from https://www.opendata.nhs.scot/dataset/prescriptions-in-the-community . These years were chosen to compare winter holidays with and without COVID lockdown restrictions (to be referenced).
+Importing data files of December and January 2019-2023 downloaded from https://www.opendata.nhs.scot/dataset/prescriptions-in-the-community . These years were chosen to compare winter holidays with and without COVID lockdown restrictions (to be referenced). Healthboard data can be dowloaded from.... Data on the levels of education can be found at ...
 
 ```{r loading, message=FALSE, warning=FALSE}
 #creating a list of the files containing prescription data
@@ -38,7 +38,8 @@ files <- list.files(here("data"), pattern = "20")
 #creating a dataframe which combines all of the information in the files and cleaning the column names for consistency
 all_data <- files %>% 
   map_dfr(~read_csv(here("data", .))) %>%
-  clean_names()
+  clean_names() %>% 
+  mutate(hb = coalesce(hbt, hbt2014))
 
 #loading in data for healthboard names and cleaning the column names for consistency
 hb <- read_csv(here("data", "health_boards.csv")) %>% 
@@ -46,45 +47,50 @@ hb <- read_csv(here("data", "health_boards.csv")) %>%
 
 #joining precription data to healthboard names
 hb_and_prescription <- all_data %>% 
-  full_join(hb, by = c("hbt2014" = "hb"))
+  full_join(hb, by = c("hb" = "hb"))
+
+#loading in data for education level of healthboard
+education_levels <- read_csv(here("data", "table_2024-11-22_21-18-31.csv"), skip = 10) %>% 
+  clean_names()
 ```
 
 ## Wrangling Data
 
 ```{r wrangling}
-#The data must be wrangled in order to make it easier to plot later.
-#filtering for data on the prescribed antibiotic we're interested in for the whole of Scotland at once
+#The data must be wrangled in order to make it easier to use later.
 combined_scotland_data  <- hb_and_prescription %>% 
-  filter(str_detect(bnf_item_description, "GAVISCON")) %>% 
   mutate(paid_date_month = parse_date_time(paid_date_month, "ym")) %>% 
   mutate(year = format(paid_date_month, "%Y"))
 
-#creating a dataframe to add as column clarifying which holiday
-years <- 2019:2022
-range <- paste(years, years+1, sep = "/")
-repeats <- rep(range, each = 2)
-df <- tibble(holiday = repeats)
-
+#creating a function for the creation of columns needed
+dates_func <- function(df) {
+  df %>% 
+  mutate(holiday = case_when(month(paid_date_month) == 12 ~ paste(year(paid_date_month), year(paid_date_month) + 1, sep = "/"),
+                             month(paid_date_month) == 1 ~ paste(year(paid_date_month) - 1, year(paid_date_month), sep = "/"))) %>% 
+  mutate(month = month(paid_date_month, label = TRUE, abbr = FALSE))
+}
+ 
 for_plot <- combined_scotland_data %>% 
+  filter(str_detect(bnf_item_description, "GAVISCON")) %>% 
   group_by(paid_date_month) %>% 
   summarise(paid_quantity = sum(paid_quantity)) %>% 
-  mutate(holiday = df$holiday) %>% 
-  mutate(month = month(paid_date_month, label = TRUE, abbr = FALSE))
+  dates_func()
 ```
 
 ## Plotting Data
 
 ```{r bar-plotting}
 #plotting data
-combined_scotland_plot <- for_plot %>% 
+gaviscon <- for_plot %>% 
   ggplot(aes(x = holiday, y = paid_quantity, fill = month))+
   geom_bar(stat = "identity", alpha = 0.9)+
+ # facet_wrap(~HBName)
   theme_minimal()+
-  labs(x = "Date prescribed", 
+  labs(x = "Holiday during which date prescribed", 
        y = "Quantity of Gaviscon Prescribed", 
        title = "Trend in Gaviscon prescription over winter holidays in Scotland",
        fill = "Month")
-combined_scotland_plot
+gaviscon
 ```
 
 ## Comparison of differences between December and January
@@ -111,25 +117,114 @@ change_table <- change_in_prescription %>%
 change_table  
 ```
 
-```{r healthboard}
+## Assessing trends in all prescriptions
 
+In order to check whether the decrease in Gaviscon prescription is possibly affected by social/celebrations and then new year new me xx, the general trend of all presriptions in the months of December and January will be assessed for a difference. 
+```{r total-trend}
+all_prescriptions <- combined_scotland_data %>% 
+  filter(!is.na(bnf_item_description)) %>% 
+  group_by(paid_date_month) %>% 
+  summarise(paid_quantity = sum(paid_quantity)) %>% 
+  dates_func() %>% 
+  select(holiday, paid_quantity, month) %>% 
+  pivot_wider(names_from = month, values_from = paid_quantity) %>% 
+  mutate(difference = January - December) %>% 
+  mutate(percent = difference/December)
+
+general_trend <- all_prescriptions %>% 
+  gt() %>% 
+  fmt_number(columns = c(December, January, difference), decimals = 0) %>% 
+  fmt_percent(columns = percent, decimals = 2) %>% 
+  tab_header(title = "Prescription Quantity During Winter Holidays", 
+             subtitle = "Data from NHS Scotland") %>% 
+  cols_label(holiday = " ",
+             difference = "Change", 
+             percent = "Percentage Change") %>% 
+  cols_align(align = "center",
+              columns = percent)
+general_trend
+```
+
+write something about general trend being the same as gaviscon trend:( although, more difference recent years
+
+## Investigating the differences between healthboards
+
+Education level has been proven to have an effect on the quality of eating and drinking habits. Data from the Scottish census done in 2022 shows that ... has the highest proportion of individuals with no qualifications and ... with the highest. This data can be sourced from https://www.scotlandscensus.gov.uk/webapi/jsf/tableView/tableView.xhtml. The effect of education on the change in prescription between December and January of gaviscon will be investigated. 
+```{r education, message=FALSE, warning=FALSE}
+cleaning_edu <- education_levels %>% 
+  slice(1:15) %>% 
+  filter(!is.na(highest_level_of_qualification)) %>% 
+  filter(!is.na(all_people_aged_16_and_over)) %>% 
+  mutate(all_people = as.numeric(all_people_aged_16_and_over)) %>% 
+  mutate(proportion = no_qualifications/all_people) %>% 
+  mutate(hb_name = paste("NHS", highest_level_of_qualification))
+
+gaviscon_by_hb <- combined_scotland_data %>% 
+  filter(str_detect(bnf_item_description, "GAVISCON")) %>%
+  dates_func() %>% 
+  group_by(hb_name, month) %>% 
+  summarise(paid_quantity = sum(paid_quantity)) %>% 
+  pivot_wider(names_from = month, values_from = paid_quantity) %>% 
+  mutate(average_diff = (January - December)/4)
+
+gaviscon_and_education <- gaviscon_by_hb %>% 
+  full_join(cleaning_edu) %>% 
+  mutate(gaviscon_proportion = average_diff/all_people)
+
+hb_gav_plot <- gaviscon_and_education %>% 
+  ggplot(aes(x = proportion, y = gaviscon_proportion))+
+  geom_point()
+hb_gav_plot
+```
+
+
+```{r include = FALSE}
+#other drug
+for_plot2 <- combined_scotland_data %>% 
+  filter(str_detect(bnf_item_description, "LORATADINE")) %>% 
+  group_by(paid_date_month) %>% 
+  summarise(paid_quantity = sum(paid_quantity)) %>% 
+  mutate(holiday = case_when(month(paid_date_month) == 12 ~ paste(year(paid_date_month), year(paid_date_month) + 1, sep = "/"),
+                             month(paid_date_month) == 1 ~ paste(year(paid_date_month) - 1, year(paid_date_month), sep = "/"))) %>% 
+  mutate(month = month(paid_date_month, label = TRUE, abbr = FALSE))
+
+omeprazole <- for_plot2 %>% 
+  ggplot(aes(x = holiday, y = paid_quantity, fill = month))+
+  geom_bar(stat = "identity", alpha = 0.9)+
+  theme_minimal()+
+  labs(x = "Holiday during which date prescribed", 
+       y = "Quantity of L Prescribed", 
+       title = "Trend in L prescription over winter holidays in Scotland",
+       fill = "Month")
+omeprazole
+
+change_in_prescription2 <- for_plot2 %>% 
+  select(holiday, paid_quantity, month) %>% 
+  pivot_wider(names_from = month, values_from = paid_quantity) %>% 
+  mutate(difference = January - December) %>% 
+  mutate(percent = difference/December)
+
+change_table2 <- change_in_prescription2 %>% 
+  gt() %>% 
+  fmt_number(columns = c(December, January, difference), decimals = 0) %>% 
+  fmt_percent(columns = percent, decimals = 2) %>% 
+  tab_header(title = "Prescription Quantity of L During Winter Holidays", 
+             subtitle = "Data from NHS Scotland") %>% 
+  cols_label(holiday = " ",
+             difference = "Change", 
+             percent = "Percentage Change") %>% 
+  cols_align(align = "center",
+              columns = percent)
+change_table2 
 ```
 
 to do:
 
 * change names
 
-* make graph pretty (y-axis numbers, months, fill)
+* clear justifications with relevant references
 
-* change YAML theme
-
-* make a table of Jan-Dec to oberve differences in differences (COVID?)
-
-* use census for socioeconomics and whether that effects the proportion of change? (difference/initial)
-
-* look into general trend for decrease in precriptions in Jan
-
-*check omeprazole or other antacids
+* limitations and next steps
 
 ```{r include = FALSE}
 #gavison over december and january - compare the two months of different years for increase then decrease
@@ -138,6 +233,11 @@ to do:
 #map or graph for the difference in each HB
 #look into the effect of covid
 #look into the effect of socioeconomics
+##creating a dataframe to add as column clarifying which holiday, eg. 2019/2020
+#years <- 2019:2022
+#range <- paste(years, years+1, sep = "/")
+#repeats <- rep(range, each = 2)
+#df <- tibble(holiday = repeats)
 
 #reasoning for choosing 2023 and nitrofurantoin-
 
