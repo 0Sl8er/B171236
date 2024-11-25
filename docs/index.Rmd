@@ -110,6 +110,7 @@ interactive <- gaviscon %>%
   ggplotly()
 interactive
 ```
+
 From this plot we can see that each observed year shows a decrease in the amount of prescription of Gaviscon from December into January in Scotland. This supports the idea that over-consumption during December leads to higher prescription of Gavsicon compared to January. It also points to lockdown having an effect on the health of the population during the 2020-2021 winter holidays compared to other years - December prescriptions being higher as well as the difference from December to January.
 
 ## Comparison of differences, across Scotland, between December and January
@@ -141,11 +142,12 @@ change_table <- change_in_prescription %>%
               columns = percent)
 change_table  
 ```
+
 This table confirms that the change in Gaviscon prescription increased during the 2020-2021 winter holidays. This suggests that lockdown had an effect on the health habits of the Scottish population. However, a larger increase is observed the following year before it drops again. The 2021/2022 holidays still involved some restrictions due to the pandemic, therefore it is still possible that the change in usual celebrations had an effect on Gaviscon prescription.
 
 ## Assessing trends in all prescriptions
 
-In order to look into whether the decrease in Gaviscon prescription is affected by socialising and celebrations in December and then the calming down and health kick during January, the levels of all prescriptions combined will be assessed for a difference. 
+In order to look into whether the decrease in Gaviscon prescription is affected by socialising and celebrations in December and then the calming down and health improvement decisions during January, the levels of all prescriptions combined will be assessed for a difference. 
 ```{r total-trend}
 #preparing data for a table comparing all prescriptions quantities from December to January
 all_prescriptions <- combined_scotland_data %>% 
@@ -173,7 +175,7 @@ general_trend <- all_prescriptions %>%
 general_trend
 ```
 
-Here we can see that the trends for all prescriptions are generally similar to that of Gaviscon. There is consistently a decrease from December to the following January, however, the percentage change in Gaviscon prescription is slightly larger throughout the results. This makes no clear argument for the hypothesised change in health habits over the winter holidays as the percentage changes seen in Gaviscon prescription follow a similar trend as all other prescriptions.This shows that it is a Scottish people will generally receive more prescriptions in December than in the following January.
+Here we can see that the trends for all prescriptions are generally similar to that of Gaviscon. There is consistently a decrease from December to the following January, however, the percentage change in Gaviscon prescription is slightly larger throughout the results. This makes no clear argument for the hypothesised change in health habits over the winter holidays as the percentage changes seen in Gaviscon prescription follow a similar trend as all other prescriptions. This shows that the Scottish population will generally receive more prescriptions in December than in the following January.
 
 ## Investigating the differences between healthboards
 
@@ -211,19 +213,20 @@ hb_gav_plot <- gaviscon_and_education %>%
   geom_point(size = 3)+
   theme_minimal()+
   scale_colour_grafify(palette = "kelly")+
-  labs(title = "Investigating a correlation between education levels and the change is Gaviscon prescribed", 
-       y = "Average difference in prescription",
+  labs(title = "Investigating correlation between education levels and decreased Gaviscon prescription", 
+       y = "Average decrease in prescription",
        x = "Percentage of individuals with no qualifications", 
        colour = "Health Board")
 hb_gav_plot
 ```
+
 This plot shows no obvious correlation between the level of education and the change of Gaviscon prescription over the winter holidays. 
 
 ## Conclusion
-Overall, this exploration of the change in Gaviscon prescription during the winter holidays in Scotland has suggested that there may be an effect of differing months. There appeared to be a slightly larger decrease in Gaviscon prescription during January compared to that of all prescriptions. The difference in prescription observed in 2020/2021, during lockdown, was increased from the previous year, suggesting that it is not the social aspect of December, but possibly the stress that leads to higher Gaviscon prescription. There was no clear association between qualification level and change in Gaviscon prescription. This assessment only accounted for people with no qualifications, however involving other low levels of qualification may indicate a correlation. This investigation is limited by the amount of data used, a further exploration into a larger number of years would need to be done to have more confidence in the trends observed. Statistical analysis would also need to be done for a certain conclusion to be made, this could involve obtaining effect sizes and their standard deviations.
+Overall, this exploration of the change in Gaviscon prescription, in Scotland, has suggested that there may be an effect between different months of the winter holidays. There appeared to be a slightly larger decrease in Gaviscon prescription during January compared to that of all prescriptions. The difference in prescription observed in 2020/2021, during lockdown, was increased from the previous year, suggesting that it is not the social aspect of December, but possibly the stress that leads to higher Gaviscon prescription. There was no clear association between qualification level and change in Gaviscon prescription. This assessment only accounted for people with no qualifications, however involving other low levels of qualification may indicate a correlation. This investigation is limited by the amount of data used, a further exploration into a larger number of years would need to be done to have more confidence in the trends observed. Statistical analysis would also need to be done for a certain conclusion to be made, this could involve obtaining effect sizes and their standard deviations.
 
 ### Use of Generative AI
-Generative AI was used to identify prescribed medications that would possibly have observable trends in amount prescribed, the topic then specified myself.
+Generative AI was used to identify prescribed medications that would show trends in prescription throughout the year. This was used to inspire the current investigated topic.
 
 ### References
 
