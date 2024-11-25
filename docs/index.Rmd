@@ -213,7 +213,7 @@ hb_gav_plot <- gaviscon_and_education %>%
   geom_point(size = 3)+
   theme_minimal()+
   scale_colour_grafify(palette = "kelly")+
-  labs(title = "Investigating correlation between education levels and decreased Gaviscon prescription", 
+  labs(title = "Investigating correlation between education levels and decreased\n Gaviscon prescription", 
        y = "Average decrease in prescription",
        x = "Percentage of individuals with no qualifications", 
        colour = "Health Board")
